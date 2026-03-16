@@ -1,0 +1,3 @@
+my_ai_app/tracker.db
+my_ai_app/__pycache__/
+*.pyc

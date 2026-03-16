@@ -1,0 +1,9 @@
+streamlit
+arxiv
+requests
+feedparser
+openai
+beautifulsoup4
+streamlit-mermaid
+pygments
+pandas
