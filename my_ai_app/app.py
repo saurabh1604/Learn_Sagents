@@ -66,29 +66,29 @@ if page == "Daily Feed":
                 with st.spinner("Synthesizing Deep Dive..."):
                     try:
                         # 1. Summary
-                    summary = generate_deep_dive(item["title"], item["summary"])
-                    st.markdown("### 🧬 Core Contributions")
-                    st.markdown(summary)
+                        summary = generate_deep_dive(item["title"], item["summary"])
+                        st.markdown("### 🧬 Core Contributions")
+                        st.markdown(summary)
 
-                    st.markdown("---")
+                        st.markdown("---")
 
-                    # 2. Intuition & Visuals
-                    st.markdown("### 🧩 Conceptual & Mathematical Intuition")
-                    intuition = generate_intuition(item["title"], item["summary"])
+                        # 2. Intuition & Visuals
+                        st.markdown("### 🧩 Conceptual & Mathematical Intuition")
+                        intuition = generate_intuition(item["title"], item["summary"])
 
-                    # Separate out the mermaid diagram
-                    mermaid_code = extract_mermaid(intuition)
-                    text_only = re.sub(r'```mermaid(.*?)```', '', intuition, flags=re.DOTALL)
+                        # Separate out the mermaid diagram
+                        mermaid_code = extract_mermaid(intuition)
+                        text_only = re.sub(r'```mermaid(.*?)```', '', intuition, flags=re.DOTALL)
 
-                    st.markdown(text_only)
+                        st.markdown(text_only)
 
-                    if mermaid_code:
-                        st.markdown("### 📊 Architecture Visualization")
-                        try:
-                            render_mermaid(mermaid_code)
-                        except Exception as e:
-                            st.error("Failed to render diagram due to complex LLM output syntax.")
-                            st.code(mermaid_code, language="mermaid")
+                        if mermaid_code:
+                            st.markdown("### 📊 Architecture Visualization")
+                            try:
+                                render_mermaid(mermaid_code)
+                            except Exception as e:
+                                st.error("Failed to render diagram due to complex LLM output syntax.")
+                                st.code(mermaid_code, language="mermaid")
                     except Exception as e:
                         st.error(f"Error calling OpenAI API: {e}. Check your API Key.")
 
