@@ -1,12 +1,16 @@
-import openai
 import os
 import streamlit as st
+from google import genai
+from google.genai import types
+import json
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY_HERE"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE"))
+MODEL_FLASH = "gemini-2.5-flash"
+MODEL_PRO = "gemini-2.5-pro"
 
 def chat_with_tutor(messages, context_title, context_summary):
-    """Sends chat messages to OpenAI acting as an interactive tutor."""
-    system_prompt = f"""
+    """Sends chat messages to Gemini acting as an interactive tutor."""
+    system_instruction = f"""
     You are an expert AI/ML interactive tutor for a senior engineer.
     You are currently discussing the paper/repo titled: '{context_title}'.
     Abstract/Summary context: {context_summary}
@@ -15,17 +19,25 @@ def chat_with_tutor(messages, context_title, context_summary):
     Keep your responses highly technical but conversational. Use markdown and LaTeX where appropriate.
     """
 
-    api_messages = [{"role": "system", "content": system_prompt}]
-    # We map Streamlit's message format to OpenAI's
-    for msg in messages:
-        api_messages.append({"role": msg["role"], "content": msg["content"]})
+    # We map Streamlit's message format to Gemini's
+    history = []
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=api_messages,
-        temperature=0.7
+    # All messages except the last one goes into history
+    for msg in messages[:-1]:
+        role = "user" if msg["role"] == "user" else "model"
+        history.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
+
+    latest_user_message = messages[-1]["content"]
+
+    response = client.models.generate_content(
+        model=MODEL_FLASH,
+        contents=history + [latest_user_message],
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=0.7,
+        )
     )
-    return response.choices[0].message.content
+    return response.text
 
 @st.cache_data
 def generate_weekly_synthesis(feeds):
@@ -41,7 +53,7 @@ def generate_weekly_synthesis(feeds):
     context_text = "\n\n".join(context_items)
 
     prompt = f"""
-    You are an expert AI/ML research analyst. Based on the following top trending papers and repositories from this week, provide a "Weekly Intelligence Synthesis".
+    Based on the following top trending papers and repositories from this week, provide a "Weekly Intelligence Synthesis".
 
     1. **The Big Picture**: Where is the research heading based on this data? (e.g., Focus on RAG, multi-agent frameworks, efficiency).
     2. **Key Breakthroughs**: Highlight 2-3 specific papers/repos from the list that seem the most novel or impactful.
@@ -52,21 +64,21 @@ def generate_weekly_synthesis(feeds):
     {context_text}
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are a senior AI/ML strategy consultant."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.4
+    response = client.models.generate_content(
+        model=MODEL_FLASH,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction="You are a senior AI/ML strategy consultant.",
+            temperature=0.4,
+        )
     )
-    return response.choices[0].message.content
+    return response.text
 
 @st.cache_data
 def generate_deep_dive(title, abstract_or_content):
     """Generates a deep dive summary focusing on novel contributions and advanced concepts."""
     prompt = f"""
-    You are an expert AI/ML researcher with 11+ years of experience analyzing a new paper or framework titled: '{title}'.
+    Analyze a new paper or framework titled: '{title}'.
 
     Content/Abstract: {abstract_or_content}
 
@@ -78,49 +90,53 @@ def generate_deep_dive(title, abstract_or_content):
     Keep it concise, highly technical, and formatted in Markdown.
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are a senior AI/ML research assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.3
+    response = client.models.generate_content(
+        model=MODEL_PRO, # Use Pro for deeper technical synthesis
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction="You are a senior AI/ML research assistant.",
+            temperature=0.3,
+        )
     )
-    return response.choices[0].message.content
+    return response.text
 
 @st.cache_data
 def generate_concept_graph(title, abstract_or_content):
     """Extracts key concepts and relationships for a network graph."""
     prompt = f"""
     Analyze the following research paper/repo and extract 5 to 8 key concepts/entities and their relationships.
-    Format the output STRICTLY as a JSON array of objects, with no markdown code block wrappers (e.g. no ```json), just the raw JSON text.
-    Each object must have:
-    - "source": string (the origin concept)
-    - "target": string (the related concept)
-    - "label": string (how they are related, max 3 words)
 
     Paper/Repo: '{title}'
     Content: {abstract_or_content}
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are a data extraction pipeline. Output ONLY valid JSON."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1
+    # Define the schema for Gemini structured output
+    schema = types.Schema(
+        type=types.Type.ARRAY,
+        items=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "source": types.Schema(type=types.Type.STRING),
+                "target": types.Schema(type=types.Type.STRING),
+                "label": types.Schema(type=types.Type.STRING),
+            },
+            required=["source", "target", "label"],
+        )
     )
 
-    # Try to parse the JSON
-    import json
+    response = client.models.generate_content(
+        model=MODEL_FLASH,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction="You are a data extraction pipeline.",
+            temperature=0.1,
+            response_mime_type="application/json",
+            response_schema=schema,
+        )
+    )
+
     try:
-        raw_text = response.choices[0].message.content.strip()
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-        return json.loads(raw_text)
+        return json.loads(response.text)
     except Exception as e:
         print(f"Failed to parse concept graph JSON: {e}")
         return []
@@ -129,7 +145,7 @@ def generate_concept_graph(title, abstract_or_content):
 def generate_intuition(title, abstract_or_content):
     """Generates mathematical, conceptual, and visual intuition (Mermaid diagram)."""
     prompt = f"""
-    You are an expert AI/ML researcher analyzing: '{title}'.
+    Analyze: '{title}'.
 
     Content/Abstract: {abstract_or_content}
 
@@ -139,21 +155,21 @@ def generate_intuition(title, abstract_or_content):
     3. **Visual Intuition**: Create a valid Mermaid.js graph code block (```mermaid ... ```) that visualizes the architecture, agent workflow, or data flow. Ensure the Mermaid code is structurally correct and uses valid syntax (e.g., avoid parentheses in node names unless quoted).
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are a senior AI/ML research assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.4
+    response = client.models.generate_content(
+        model=MODEL_PRO,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction="You are a senior AI/ML research assistant.",
+            temperature=0.4,
+        )
     )
-    return response.choices[0].message.content
+    return response.text
 
 @st.cache_data
 def generate_code_scaffolding(title, abstract_or_content):
     """Generates advanced starter code for implementing the concept."""
     prompt = f"""
-    You are a senior AI/ML engineer. Based on the paper/concept: '{title}'.
+    Based on the paper/concept: '{title}'.
 
     Content: {abstract_or_content}
 
@@ -166,12 +182,12 @@ def generate_code_scaffolding(title, abstract_or_content):
     Output strictly in markdown Python code blocks.
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are an elite 10x AI/ML software engineer."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.2
+    response = client.models.generate_content(
+        model=MODEL_PRO,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction="You are an elite 10x AI/ML software engineer.",
+            temperature=0.2,
+        )
     )
-    return response.choices[0].message.content
+    return response.text

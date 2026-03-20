@@ -5,7 +5,7 @@ from ui_components import inject_custom_css, render_feed_item, save_to_db, extra
 import os
 
 # Set API key globally for the app per user request
-os.environ["OPENAI_API_KEY"] = "YOUR_OPENAI_API_KEY_HERE"
+os.environ["GEMINI_API_KEY"] = "YOUR_GEMINI_API_KEY_HERE"
 import sqlite3
 import re
 from db_setup import DB_PATH, init_db
@@ -122,7 +122,7 @@ if page == "Daily Feed":
                             st.toast(f"🧠 Knowledge Absorbed! (+{xp_gained['xp_gained']} XP)")
 
                 except Exception as e:
-                    st.error(f"Error calling OpenAI API: {e}")
+                    st.error(f"Error calling Gemini API: {e}")
 
             with st.expander("⚙️ Implementation Scaffolding"):
                 with st.spinner("Generating Production-Ready Skeleton..."):
@@ -131,7 +131,7 @@ if page == "Daily Feed":
                         st.markdown("### 💻 Starter Code")
                         st.markdown(code)
                     except Exception as e:
-                        st.error(f"Error calling OpenAI API: {e}")
+                        st.error(f"Error calling Gemini API: {e}")
 
         with right_col:
             st.subheader("💬 Interactive Tutor")
