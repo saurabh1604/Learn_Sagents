@@ -20,19 +20,29 @@ def inject_custom_css():
         }
 
         /* Card styling for feed items */
-        .feed-card {
-            background-color: #1e293b;
-            padding: 1.5rem;
-            border-radius: 12px;
-            border-left: 4px solid #38bdf8;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        /* Fade in animation for elements */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .feed-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.2);
+        .stMarkdown, .stButton, .stMetric, .stExpander {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* Card styling for feed items */
+        .stContainer {
+            background-color: #1e293b !important;
+            border-radius: 12px !important;
+            border-left: 4px solid #38bdf8 !important;
+            margin-bottom: 1.5rem !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .stContainer:hover {
+            transform: translateY(-4px) !important;
+            box-shadow: 0 15px 25px -5px rgba(56, 189, 248, 0.3) !important;
         }
 
         .feed-title {
@@ -84,11 +94,18 @@ def inject_custom_css():
             border: none;
             padding: 0.5rem 1rem;
             font-weight: 600;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .stButton>button:hover {
             background-color: #0284c7;
-            box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.6);
+            transform: scale(1.02);
+        }
+
+        /* Chat Input Styling */
+        .stChatInput {
+            border-radius: 12px !important;
+            border: 1px solid #38bdf8 !important;
         }
 
         /* Markdown Code Blocks */

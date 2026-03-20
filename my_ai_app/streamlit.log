@@ -7,3 +7,16 @@ Collecting usage statistics. To deactivate, set browser.gatherUsageStats to fals
   Local URL: http://localhost:8501
   Network URL: http://192.168.0.2:8501
   External URL: http://35.224.132.190:8501
+
+2026-03-20 14:16:14.446 Uncaught app execution
+Traceback (most recent call last):
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 689, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/my_ai_app/app.py", line 3, in <module>
+    from deep_dive import generate_deep_dive, generate_intuition, generate_code_scaffolding, chat_with_tutor, generate_weekly_synthesis, generate_concept_graph
+ImportError: cannot import name 'chat_with_tutor' from 'deep_dive' (/app/my_ai_app/deep_dive.py)
+  Stopping...
